@@ -1,0 +1,651 @@
+---
+title: "Assignment 1 - Time Series Analysis"
+author: "Siddhi Potdar - s3856360"
+output: html_document
+---
+## Predicting the closing price of a share in ASX for the next 5 days based on it's data for 144 days.
+
+## Table of Contents
+
+[1. Intruduction](#intro) 
+
+[2. Load the data set](#load) 
+
+---[2.1 Creating an object and plotting the time series graph](#obj) 
+
+[3. Linear Model](#linearm) 
+
+---[3.1 The fitted linear model graph](#fittedlm) 
+
+---[3.2 Residuals](#reslm)
+
+---[3.3 Time series plot of residuals](#tslm) 
+
+---[3.4 Histogram](#histolm) 
+
+---[3.5 Q-Q plot](#qqlm) 
+
+---[3.6 ACF plot](#acflm) 
+
+---[3.7 Shapiro-Wilk test](#swlm) 
+
+[4. Quadratic Model](#quadm) 
+
+---[4.1 The fitted quadratic model graph](#fittedq) 
+
+---[4.2 Residuals](#resquad)
+
+---[4.3 Time series plot of residuals](#tsq) 
+
+---[4.4 Histogram](#histoq) 
+
+---[4.5 Q-Q plot](#qqq) 
+
+---[4.6 ACF plot](#acfq)
+
+---[4.7 Shapiro-Wilk test](#swq)
+
+[5. Cyclical or seasonal model](#csm) 
+
+---[5.1 The fitted quadratic model graph](#fittedcsm) 
+
+---[5.2 Residuals](#rescsm)
+
+---[5.3 Time series plot of residuals](#tscsm) 
+
+---[5.4 Histogram](#histocsm) 
+
+---[5.5 Q-Q plot](#qqcsm) 
+
+---[5.6 ACF plot](#acfcsm)
+
+---[5.7 Shapiro-Wilk test](#swcsm)
+
+[6. Cosine Model](#cosm) 
+
+---[6.1 The fitted cosine model graph](#fittedcos) 
+
+---[6.2 Residuals](#rescos)
+
+---[6.3 Time series plot of residuals](#tscos) 
+
+---[6.4 Histogram](#histocos) 
+
+---[6.5 Q-Q plot](#qqcos) 
+
+---[6.6 ACF plot](#acfcos) 
+
+---[6.7 Shapiro-Wilk test](#swcos)
+
+[7. Comparison](#comp) 
+
+[8. Forecasting](#forecast) 
+
+[9. Conclusion](#conc) 
+
+[10. References](#ref) 
+
+
+<a id="intro"></a>
+
+
+## Introduction
+
+
+The closing price of a share in ASX is provided. The data set `assignment1Data2022.csv` is consisted of 144 observations out of 252 trading days in a year. The data set comprises of two columns, days and closing price of a share for that day respectively. In this assignment, the changes has been observed in the closing price with the use of time series plots. By implementing the model building strategy, I chose the best fitted model among the 4 models. The aim is to predict the closing price of a share for the next 5 days using the best model.
+
+
+
+```{r, warnings=FALSE}
+
+#To load desired packages.
+
+library(TSA)
+library(readr)
+```
+
+<a id="load"></a>
+
+
+##  Load the data set
+
+
+This chunk will load the data set and print the first 6 values. I also displayed the structure of the data set.
+
+```{r}
+#Load the data into price variable
+price<-read.csv("assignment1Data2022.csv")
+
+#Print first 6 values and the structure of the data set
+head(price)
+
+str(price)
+```
+
+<a id="obj"></a>
+
+
+## Creating an object and plotting the time series graph
+
+
+```{r}
+#To create an object of the column and store itin the variable 'price_obj'
+price_obj<-ts(price$x)
+
+#To convert it into time series objects and plot the graph
+
+time(price_obj)
+
+plot(price_obj,type='o',xlab="Days",ylab="Closing price",main="Time series plot of a share market prices")
+
+```
+
+It is observed that the data is not stationary. I also assume that the null hypothesis states that the graph is normally distributed. This hypothesis is used later in the models.
+
+
+<a id="linearm"></a>
+
+
+## Linear model
+
+```{r}
+#To store the time series object and fitting the series into linear model.
+ts_var<-time(price_obj)
+linear_model<-lm(price_obj~ts_var)
+summary(linear_model)
+
+```
+
+I observed that the estimates of the intercept and slope are β^0= 94.53 and β^1= -0.26 respectively. The slope is also statistically significant at 5% significance level as the p-value is less than 0.05.
+
+
+<a id="fittedlm"></a>
+
+
+### The fitted linear model graph
+
+```{r}
+#To plot fitted linear model
+
+plot(ts(fitted(linear_model)), ylim = c(min(c(fitted(linear_model),
+     as.vector(price_obj))), max(c(fitted(linear_model),as.vector(price_obj)))),ylab='Closing prices' ,xlab='Days',
+     main = "Fitted linear curve",col="red")
+
+#To add the fittest least square least line.
+lines(as.vector(price_obj),type="o")
+```
+
+
+<a id="reslm"></a>
+
+
+### Residuals for linear model
+
+If the model is reasonably correct the the residuals should behave like true stochastic component. Similarly, if the stochastic component is a white noise then the residuals should behave like independent random variables with zero standard deviation and mean.
+
+```{r}
+
+#The residuals for linear model
+reslm=rstudent(linear_model)
+
+```
+
+<a id="tslm"></a>
+
+
+### Time series plot of residuals
+
+```{r}
+plot(y=reslm,x=as.vector(time(price_obj)), xlab='Days',ylab='Standardized residuals',type='o', main = "Time series plot of residuals.")
+```
+
+<a id="histolm"></a>
+
+### Histogram linear model 
+
+```{r}
+#To plot histogram
+hist(reslm,xlab='Standardized Residuals',col='lightgreen', main = "Histogram of the standardized residuals from the linear trend model.")
+```
+
+The histogram can be used to check the normality of the residuals. The plot is left skewed as deviation can be observed on the left ends and the peak is inclined towards the right end.
+
+
+<a id="qqlm"></a>
+
+
+### Q-Q plot linear model
+
+```{r}
+# To plot the Q-Q plot
+qqnorm(reslm, main = "Normal Q-Q plot of the standardized residuals from the linear trend model.")
+qqline(reslm, col = 'blue', lwd = 1, lty = 2)
+```
+
+
+It is observed that both the tails are deviated from the straight line. Therefore, it is not normally distributed.
+
+
+<a id="acflm"></a>
+
+
+### ACF Plot linear model
+
+```{r}
+# To plot the ACF linear model.
+acf(reslm,col='red', main = "ACF of standardized residuals")
+```
+
+All the values are above the horizontal dashed lines. Hence, I decide that the stochastic component of the series is not a white noise.
+
+<a id="swlm"></a>
+
+
+### Shapiro-Wilk test
+
+```{r}
+#The Shapiro-Wilk test
+
+shapiro.test(reslm)
+
+```
+
+The p-value is 0.01413 which is less than 0.05 so we reject the null hypothesis that the stochastic component is normally distributed.
+
+<a id="quadm"></a>
+
+
+## Quadratic model
+
+```{r}
+ts_var=time(price_obj)
+ts_var2 = ts_var^2
+quad_model = lm(price_obj~ts_var+ts_var2) 
+summary(quad_model)
+
+```
+
+I observed that the estimates of the intercept are β^0= 70.28 respectively. The slope is also statistically significant at 5% significance level as the p-value is less than 0.05.
+
+<a id="fittedq"></a>
+
+
+### Fitted quadratic model
+
+```{r}
+#To plot fitted quadratic model
+plot(ts(fitted(quad_model)), ylim = c(min(c(fitted(quad_model),
+     as.vector(price_obj))), max(c(fitted(quad_model),as.vector(price_obj)))),ylab='Standardized residuals' ,xlab='Days',
+     main = "Fitted quadratic curve",col="red")
+lines(as.vector(price_obj),type="o")
+```
+
+
+<a id="resquad"></a>
+
+
+### Residuals
+
+```{r}
+#To carry out the residuals
+resquad=rstudent(quad_model)
+
+```
+
+<a id="tsq"></a>
+
+
+### Time series analysis plot of residuals
+
+```{r}
+plot(y=resquad,x=as.vector(time(price_obj)), xlab='Days',ylab='Closing price',type='o', main = "Time series plot of residuals.")
+```
+
+<a id="histoq"></a>
+
+
+### Histogram quadratic model
+
+
+```{r}
+#To plot histogram
+hist(resquad,xlab='Standardized Residuals',col='lightgreen', main = "Histogram of the standardized residuals from the seasonal means model.")
+```
+
+
+
+The graph is slightly left skewed as a slight deviation is observed at the left tail. Therefore, the graph is somewhat normally distributed.
+
+<a id="qqq"></a>
+
+
+### Q-Q plot quadratic model
+
+```{r}
+#To plot Q-Q plot for quadratic model.
+
+qqnorm(resquad, main = "Normal Q-Q plot of the standardized residuals from the seasonal means model.")
+qqline(resquad, col = 'blue', lwd = 1, lty = 2)
+```
+
+It is observed that the bottom tail is deviated from the straight line. But, all the values in the center are lying exactly on the straight line. Therefore, it is somewhat normally distributed.
+
+
+<a id="acfq"></a>
+
+
+### ACF Plot quadratic model
+
+```{r}
+#To plot ACF plot for quadratic model
+
+acf(resquad, main = "ACF of standardized residuals")
+```
+
+
+Some values are within the horizontal dashed lines. Hence, I decide that the stochastic component of the series is somewhat white noise.
+
+<a id="swq"></a>
+
+
+###  Shapiro-Wilk test
+
+```{r}
+#Shapiro-Wilk test
+
+shapiro.test(resquad)
+
+```
+
+
+The p-value is 0.2324 which is greater than 0.05 so we accept the null hypothesis that the stochastic component is normally distributed.
+
+
+<a id="csm"></a>
+
+
+## Cyclical or seasonal model
+
+```{r}
+
+cyc_ts <- ts(price$x, frequency = 5)
+plot(cyc_ts, ylab = 'Closing share price', xlab = 'Days', 
+     main = 'Time series plot of share price with weekly seasonality')
+
+freq. = season(cyc_ts)
+cyc_model = lm(cyc_ts ~ freq.-1) 
+summary(cyc_model)
+```
+
+
+```{r}
+cyc_model_1=lm(cyc_ts~freq.) # remove -1 to include the intercept term in the model  
+summary(cyc_model_1)
+
+```
+
+As the R-squared value for the above intercept is -0.02734, we will not consider the model. I considered the above model which gave R-squared value as 0.9541.
+
+
+<a id="rescsm"></a>
+
+### Residual Analysis
+
+```{r}
+cyc_model = rstudent(cyc_model)
+```
+
+
+<a id="tscsm"></a>
+
+### Time series plot
+
+```{r}
+plot(y = cyc_model, x = as.vector(time(cyc_ts)),xlab = 'Days', ylab='Standardized Residuals',type='l',main = "Standardised residuals for seasonal model.")
+points(y=cyc_model,x=time(cyc_ts), pch=as.vector(season(cyc_ts)))
+
+```
+
+
+<a id="histocsm"></a>
+
+### Histogram cyclical model
+
+```{r}
+hist(cyc_model,xlab='Standardized Residuals',col="lightgreen", main = "Histogram of standardised residuals.")
+```
+
+
+The graph is left skewed as a deviation is observed at the left tail. Also, the peak is inclined towards the right. Therefore, the graph is not normally distributed.
+
+<a id="qqcsm"></a>
+
+### Q-Q plot for cyclical or seasonal model
+
+```{r}
+
+
+qqnorm(y=cyc_model, main = "QQ plot of standardised residuals.")
+qqline(y=cyc_model, col = 'blue', lwd = 1, lty = 2)
+```
+
+It is observed that the values on the both the tails are deviating from the straight line. Hence, the graph is not normally distributed.
+
+<a id="acfcsm"></a>
+
+
+### ACF for cyclical model
+
+```{r}
+acf(cyc_model, main = "ACF of standardized residuals.")
+```
+
+All the values are above the horizontal dashed lines. Hence, I decide that the stochastic component of the series is not a white noise.
+
+<a id="swcsm"></a>
+
+### Shapiro-wilk test
+
+```{r}
+shapiro.test(cyc_model)
+```
+
+The p-value is 7.213e-13 which is less than 0.05 so we reject the null hypothesis that the stochastic component is normally distributed.
+
+
+<a id="cosm"></a>
+
+
+## Cosine model
+
+```{r}
+
+har.=harmonic(price_obj,0.45) # calculate cos(2*pi*t) and sin(2*pi*t)
+cosine_model=lm(price_obj~har.)
+summary(cosine_model)
+```
+
+
+I observed that the estimates of the intercept are β^0= 7.777e+01. The slope is also statistically significant at 5% significance level as the p-value is less than 0.05.
+
+<a id="fittedcos"></a>
+
+
+### Fitted cosine model
+
+```{r}
+#To plot the fitted cosine model
+
+plot(ts(fitted(cosine_model)),ylab='Closing price',type='l',
+ylim=range(c(fitted(cosine_model),price_obj)),col='red',main="Fitted cosine model .") 
+lines(as.vector(price_obj),type='o')
+points(price_obj) 
+```
+
+
+<a id="rescos"></a>
+
+### Residuals
+
+```{r}
+#To carry out the residuals
+rescos=rstudent(cosine_model)
+
+```
+
+<a id="tscos"></a>
+
+
+### Time series analysis for residuals -cosine model
+
+```{r}
+#To plot the time series plot for the residuals
+plot(y=rescos,x=as.vector(time(price_obj)), xlab='Days',ylab='Standardized residuals',type='o', main = "Time series plot of residuals.")
+```
+
+<a id="histocos"></a>
+
+
+### Histogram cosine model
+
+
+```{r}
+#To plot the histogram
+hist(rescos,xlab='Standardized Residuals',col='lightgreen', main = "Histogram of the standardized residuals from the seasonal means model.")
+```
+
+The graph is left skewed as a deviation is observed at the left tail. Also, the peak is inclined towards the right. Therefore, the graph is not normally distributed.
+
+
+<a id="qqcos"></a>
+
+
+### Q-Q plot for cosine model
+
+```{r}
+#To plot the Q-Q plot for cosine model.
+
+
+qqnorm(rescos, main = "Normal Q-Q plot of the standardized residuals from the seasonal means model.")
+qqline(rescos, col = 2, lwd = 1, lty = 2)
+```
+
+It is observed that the values on the bottom tail are deviating from the straight line. Hence, the graph is not normally distributed.
+
+<a id="asfcos"></a>
+
+
+### ACF Plot-Cosine model
+
+```{r}
+
+acf(rescos, main = "ACF of standardized residuals")
+```
+
+
+All the values are above the horizontal dashed lines. Hence, I decide that the stochastic component of the series is not a white noise.
+
+<a id="swcos"></a>
+
+
+### Shapiro-Wilk test
+
+```{r}
+#Shapiro-Wilk test
+
+shapiro.test(rescos)
+
+```
+
+The p-value is 9.656e-12 which is less than 0.05 so we reject the null hypothesis that the stochastic component is normally distributed.
+
+<a id="comp"></a>
+
+
+## Comparison
+
+For predicting the closing price of a share for the next 5 days, I compared the results obtained from the above models.
+
+
+### Linear Model
+
+* R-squared:  0.4513
+* ACF - the stochastic component of the series is not a white noise
+* Shapiro-Wilk p-value = 0.01413
+
+### Cosine trend Model
+
+* R-squared:  0.03572 
+* ACF - the stochastic component of the series is not a white noise
+* Shapiro-Wilk p-value = 9.656e-12
+
+### Cyclical or seasonal model
+
+* R-squared:  0.9541 
+* ACF - the stochastic component of the series is not a white noise
+* Shapiro-Wilk p-value = 7.213e-13
+
+### Quadratic Model
+
+* R-squared:  0.8807
+* ACF - the stochastic component of the series is a white noise
+* Shapiro-Wilk p-value = 0.2324
+
+
+
+
+As per the results obtained from the above models, Linear and Cosine models are not the good fit. Quadratic model cannot be said as the best fit as the R-squared value is greater than 0.85 but when compared to the other models, Quadratic model is the best fitted model. This best fitted model is used later for the forecasting.
+
+
+<a id="forecast"></a>
+
+
+## Forecasting
+
+```{r}
+#Predicting the values for the next 5 days
+h = 5 #Next 5 observations
+ts_var <- time(price_obj)
+ts_var2 <- ts_var^2
+nextDays <- data.frame(ts_var = seq(145, 144+h, 1),
+                         ts_var2 = seq(145, 144+h, 1)^2)
+forecastingModel <- predict(quad_model, nextDays, interval = "prediction")
+print(forecastingModel)
+
+#To plot the graph for the prediction.
+plot(price_obj, xlim= c(1,144+h+1), ylim = c(1,150),
+     ylab = "Closing price",
+     main = "Forecasts from the quadratic model fitted to the Stock market prices.")
+lines(ts(as.vector(forecastingModel[,3]), start = 145), col="blue", type="l")
+lines(ts(as.vector(forecastingModel[,1]), start = 145), col="red", type="l")
+lines(ts(as.vector(forecastingModel[,2]), start = 145), col="blue", type="l")
+legend("topleft", lty=1, pch=1, col=c("black","blue","red"),text.width = 18,c("Data","5% forecast limits","Forecasts"))
+```
+
+
+After the prediction, the values for the next 5 days is as follows,
+``````````````````````````````
+    Days   | Closing Price
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ 145th day |   32.03113
+ 146th day |   30.76371
+ 147th day |   29.48255
+ 148th day |   28.18763
+ 149th day |   26.87896
+```````````````````````````````
+
+<a id="conc"></a>
+
+
+## Conclusion
+
+The closing price of a share showed the downward trend. The linear, quadratic, cyclic or seasonal model and cosine model was performed. As per the results obtained,I cannot say that the quadratic model was considered as the best fitted model as the R-squared value is greater than 0.85, but if compared with all the models, it is the good fit. I later used quadratic model for forecasting and predicted the closing prices of a share market for the next 5 days. 
+
+<a id="ref"></a>
+
+## References
+
+Dr Haydar Demirhan 2022, Module 1: Basic Plots, Examples, and Fundamental Concepts, lecture notes, MATH 1318 Time Series Analysis, RMIT University, viewed 26/03/2022
+
+
+Dr Haydar Demirhan 2022, Module 2: Analysis of Trends, lecture notes, MATH 1318 Time Series Analysis, RMIT University, viewed 26/03/2022
